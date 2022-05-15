@@ -1,18 +1,20 @@
 package com.football.manager.model;
 
 import lombok.*;
+import org.springframework.hateoas.RepresentationModel;
 
 import javax.persistence.*;
 import java.io.Serializable;
 import java.time.LocalDate;
 
+@EqualsAndHashCode(callSuper = true)
 @Data
 @NoArgsConstructor
 @AllArgsConstructor
 @Builder
 @Entity
 @Table(name = "player")
-public class Player implements Serializable {
+public class Player extends RepresentationModel<Player> {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)

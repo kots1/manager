@@ -7,11 +7,15 @@ import com.football.manager.service.PlayerService;
 import com.football.manager.service.TransferService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.hateoas.Link;
 import org.springframework.http.HttpStatus;
 import org.springframework.web.bind.annotation.*;
 
 import javax.validation.Valid;
 import java.util.List;
+
+import static org.springframework.hateoas.server.mvc.WebMvcLinkBuilder.linkTo;
+import static org.springframework.hateoas.server.mvc.WebMvcLinkBuilder.methodOn;
 
 @RestController
 @Slf4j
@@ -23,23 +27,29 @@ public class PlayerController {
 
     @GetMapping("/player")
     @ResponseStatus(HttpStatus.OK)
-    public List<Player> getAllPlayers( @RequestParam(defaultValue = "1")  String page) {
+    public List<Player> getAllPlayers(@RequestParam(defaultValue = "1") String page) {
         log.info("PlayerController getAllPlayers");
-        return playerService.getAllPlayers(Integer.parseInt(page)-1);
+        List<Player> players = playerService.getAllPlayers(Integer.parseInt(page) - 1);
+        players.forEach(this::addHateoasLinks);
+        return players;
     }
 
     @GetMapping("/team/{id}/player")
     @ResponseStatus(HttpStatus.OK)
     public List<Player> getAllTeamPlayers(@PathVariable int id) {
         log.info("PlayerController getAllTeamPlayers");
-        return playerService.getAllTeamPlayers(id);
+        List<Player> players = playerService.getAllTeamPlayers(id);
+        players.forEach(this::addHateoasLinks);
+        return players;
     }
 
     @GetMapping("/player/{id}")
     @ResponseStatus(HttpStatus.OK)
     public Player getPlayerById(@PathVariable int id) {
         log.info("PlayerController getPlayerById id = " + id);
-        return playerService.getPlayerById(id);
+        Player players = playerService.getPlayerById(id);
+        addHateoasLinks(players);
+        return players;
     }
 
     @GetMapping("/player/{id}/calculate")
@@ -53,7 +63,9 @@ public class PlayerController {
     @ResponseStatus(HttpStatus.CREATED)
     public Player createPlayer(@RequestBody @Valid PlayerDto playerDto) {
         log.info("PlayerController createPlayer ");
-        return playerService.createPlayer(playerDto);
+        Player player = playerService.createPlayer(playerDto);
+        addHateoasLinks(player);
+        return player;
     }
 
     @DeleteMapping("/player/{id}")
@@ -67,7 +79,9 @@ public class PlayerController {
     @ResponseStatus(HttpStatus.OK)
     public Player updatePlayer(@PathVariable int id, @RequestBody @Valid PlayerDto playerDto) {
         log.info("PlayerController updatePlayer ");
-        return playerService.updatePlayer(id, playerDto);
+        Player player = playerService.updatePlayer(id, playerDto);
+        addHateoasLinks(player);
+        return player;
     }
 
     @GetMapping("/player/position")
@@ -75,5 +89,17 @@ public class PlayerController {
     public Position[] getPosition() {
         log.info("PlayerController getPosition ");
         return Position.values();
+    }
+
+    private void addHateoasLinks(Player player) {
+        if (!player.hasLinks()) {
+            Link link = linkTo(methodOn(PlayerController.class).getPlayerById(player.getId()))
+                    .withSelfRel();
+            player.add(link);
+            link = linkTo(methodOn(TransferController.class).getPlayerTransfer(player.getId()))
+                    .withRel("player transfer");
+            player.add(link);
+        }
+
     }
 }
